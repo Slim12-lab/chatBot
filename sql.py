@@ -64,8 +64,8 @@ async def task_list(perm):
      cursor.execute("SELECT description, customer FROM task WHERE performer=?", (perm,))
      data = cursor.fetchall()
      text = ''
-     for row in data:
-        text += f"Задача: {row[0]} \nЗаказчик: {row[1]} \n\n"
+     for idx, row in enumerate(data, start=1):
+            text += f"{idx}. Поручение: {row[0]}\nОт кого: {row[1]}\n\n"
      return(f"{text}")
 
         
