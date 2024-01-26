@@ -118,9 +118,9 @@ async def process_task_description(message: types.Message, state: FSMContext):
         
     if data['login'] is None:
         # Обработка случая, когда не удалось получить логин
-        await message.answer("Произошла ошибка. Пожалуйста, повторите попытку позднее.")
+        await message.answer("Произошла ошибка. Пожалуйста, повторите попытку.")
         return    
-    print(message.from_user.id)
+
     await message.answer('Выберите исполнителя по порядковому номеру:\n')
     await message.answer(await print_list(message.from_user.id))
         
