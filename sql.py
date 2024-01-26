@@ -35,7 +35,7 @@ except sqlite3.Error as e:
     print("Ошибка при создании таблицы 'task':", e)
 
 async def print_list(id):
-     cursor.execute("SELECT id, name, secondName, phone, email FROM auth WHERE tg_id != ?", (id,))
+     cursor.execute("SELECT id, name, secondName, phone, email FROM auth")
      data = cursor.fetchall()
      text = ''
      for row in data:
