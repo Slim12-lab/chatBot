@@ -50,7 +50,7 @@ async def cmd_cancel(message: types.message, state: FSMContext):
 async def cmd_start(message: types.Message):
 
     # Отправляем приветственное сообщение с клавиатурой
-    await message.answer(f"Вас приветствует бот-помощник! \n\n Чтобы приступить к работе, введите логин для авторизации в ответном сообщении.")
+    await message.answer(f"Вас приветствует бот-помощник! \n\nЧтобы приступить к работе, введите логин для авторизации в ответном сообщении.")
 
     # Устанавливаем состояние ожидания логина
     await AuthState.waiting_for_login.set()
@@ -71,11 +71,11 @@ async def process_login(message: types.Message, state: FSMContext):
     if user:
         # Логин найден, переходим к вводу пароля
         await state.update_data(login=data['login'])
-        await message.answer(f"Логин найден✅ \n Введите пароль, чтобы завершить авторизацию в аккаунт.")
+        await message.answer(f"Логин найден✅\nВведите пароль, чтобы завершить авторизацию в аккаунте.")
         await AuthState.waiting_for_password.set()
     else:
         # Логин не найден, просим ввести снова
-        await message.answer(f"Логин не найден❌ \nПроверьте, не допущены ли ошибки. \n\nВведите верный логин в ответном сообщении.")
+        await message.answer(f"Логин не найден❌\nПроверьте, не допущены ли ошибки. \n\nВведите верный логин в ответном сообщении.")
 
 # Обработчик ввода пароля
 @dp.message_handler(state=AuthState.waiting_for_password)
@@ -99,7 +99,7 @@ async def process_password(message: types.Message, state: FSMContext):
         await state.finish()
     else:
         # Логин и пароль не совпадают, просим ввести снова
-        await message.answer(f"Пароль не верный❌\nПроверьте, не допущены ли ошибки. \n\nВведите верный пароль в ответном сообщении.")
+        await message.answer(f"Пароль не верный❌\nПроверьте, не допущены ли ошибки.\n\nВведите верный пароль в ответном сообщении.")
 
 
 # Обработчик кнопки "Поставить задачу"
@@ -136,7 +136,7 @@ async def process_task_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         #вызов функции вставки задачи в базу данных
         await insert_task(data['login'], await return_customer(data['perfomer_num']), data['description'])
-        await message.answer("Поручение успешно добавлена!", reply_markup=kb)
+        await message.answer("Поручение успешно добавлено!", reply_markup=kb)
         await bot.send_message(await get_tgid(await return_customer(data['perfomer_num'])), f"У вас новая задача!\nОтправитель: {await get_names(data['login'])}\nОписание: {data['description']}")
 
     await state.finish()
