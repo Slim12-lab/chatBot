@@ -65,7 +65,7 @@ async def task_list(perm):
      data = cursor.fetchall()
      text = ''
      for idx, row in enumerate(data, start=1):
-            text += f"{idx}. Поручение: {row[0]}\nОт кого: {row[1]}\n\n"
+            text += f"{idx}. Поручение: {row[0]}\nОтправитель: {row[1]}\n\n"
      return(f"{text}")
 
         

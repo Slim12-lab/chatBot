@@ -50,7 +50,7 @@ async def cmd_cancel(message: types.message, state: FSMContext):
 async def cmd_start(message: types.Message):
 
     # Отправляем приветственное сообщение с клавиатурой
-    await message.answer("Добро пожаловать! Введите свой логин для авторизации:")
+    await message.answer(f"Вас приветствует бот-помощник! \n\n Чтобы приступить к работе, введите логин для авторизации в ответном сообщении.")
 
     # Устанавливаем состояние ожидания логина
     await AuthState.waiting_for_login.set()
@@ -71,11 +71,11 @@ async def process_login(message: types.Message, state: FSMContext):
     if user:
         # Логин найден, переходим к вводу пароля
         await state.update_data(login=data['login'])
-        await message.answer("Логин найден! Теперь введите пароль:")
+        await message.answer(f"Логин найден✅ \n Введите пароль, чтобы завершить авторизацию в аккаунт.")
         await AuthState.waiting_for_password.set()
     else:
         # Логин не найден, просим ввести снова
-        await message.answer("Логин не найден. Попробуйте еще раз:")
+        await message.answer(f"Логин не найден❌ \nПроверьте, не допущены ли ошибки. \n\nВведите верный логин в ответном сообщении.")
 
 # Обработчик ввода пароля
 @dp.message_handler(state=AuthState.waiting_for_password)
@@ -89,17 +89,17 @@ async def process_password(message: types.Message, state: FSMContext):
 
     if user:
         # Успешная авторизация
-        await message.answer("Вы успешно прошли авторизацию!")
+        # await message.answer("Вы успешно прошли авторизацию!")
         await insert_id(message.from_user.id, data['login'])
 
         # Отправляем сообщение с клавиатурой и устанавливаем состояние ожидания задачи
         button_task = KeyboardButton("/task")
         kb.add(button_task).insert(KeyboardButton("/list"))
-        await message.answer("Выберите действие:", reply_markup=kb)
+        await message.answer(f"Авторизация пройдена успешно!\n\nВыберите действие, которое вас интересует:", reply_markup=kb)
         await state.finish()
     else:
         # Логин и пароль не совпадают, просим ввести снова
-        await message.answer("Логин и пароль не совпадают. Попробуйте еще раз:")
+        await message.answer(f"Пароль не верный❌\nПроверьте, не допущены ли ошибки. \n\nВведите верный пароль в ответном сообщении.")
 
 
 # Обработчик кнопки "Поставить задачу"
@@ -107,7 +107,7 @@ async def process_password(message: types.Message, state: FSMContext):
 async def process_task(message: types.Message, state: FSMContext):
     await AuthState.waiting_for_perfomer.set()
     # Пользователь нажал кнопку "Поставить задачу"
-    await message.answer("Введите описание задачи:")
+    await message.answer("Введите описание поручения:")
 
 # Обработчик ввода описания задачи
 @dp.message_handler(state=AuthState.waiting_for_perfomer, content_types=types.ContentType.TEXT)
@@ -136,8 +136,7 @@ async def process_task_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         #вызов функции вставки задачи в базу данных
         await insert_task(data['login'], await return_customer(data['perfomer_num']), data['description'])
-        await message.answer("Задача успешно добавлена!", reply_markup=kb)
-
+        await message.answer("Поручение успешно добавлена!", reply_markup=kb)
         await bot.send_message(await get_tgid(await return_customer(data['perfomer_num'])), f"У вас новая задача!\nОтправитель: {await get_names(data['login'])}\nОписание: {data['description']}")
 
     await state.finish()
@@ -148,7 +147,7 @@ async def help_command(message: types.message, state: FSMContext):
     async with state.proxy() as data:
         data['login'] = await return_login(message.from_user.id)
         try:
-            await message.answer(text="Вот список твоих записей:")
+            await message.answer(text="Вот список ваших поручений:")
             await message.answer(await task_list(data['login']), reply_markup=kb)
         except Exception as e:
             print(f"Ошибка при выполнении /list: {e}")
