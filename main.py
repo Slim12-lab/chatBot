@@ -7,7 +7,7 @@ from aiogram.dispatcher.filters import Command, Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from sql import print_list, insert_id, return_customer, insert_task, task_list, get_names, get_tgid, return_login
+from sql import print_list, insert_id, return_customer, insert_task, task_list, get_names, get_tgid, return_login, delete_task_by_number, task_list_myself
 
 # Инициализация бота и диспетчера
 API_TOKEN = '6713267020:AAH9blJA-GCE6t_w7y-JJZTkz01QBmwWi-o'
@@ -26,9 +26,15 @@ class AuthState(StatesGroup):
     waiting_for_perfomer = State()
     waiting_for_number = State()
 
+class DeleteProfileState(StatesGroup):
+    del_num = State()
+
+
 
 kb = ReplyKeyboardMarkup(resize_keyboard=True,  
                          one_time_keyboard=True)
+button_task = KeyboardButton("Оставить поручение")
+kb.add(button_task).insert(KeyboardButton("Мои поручения")).insert(KeyboardButton("Оставленные поручения"))
 
 #для запуска
 async def on_startup(_):
@@ -51,7 +57,6 @@ async def cmd_start(message: types.Message):
 
     # Отправляем приветственное сообщение с клавиатурой
     await message.answer(f"Вас приветствует бот-помощник! \n\nЧтобы приступить к работе, введите логин для авторизации в ответном сообщении.")
-
     # Устанавливаем состояние ожидания логина
     await AuthState.waiting_for_login.set()
 
@@ -61,9 +66,8 @@ async def process_login(message: types.Message, state: FSMContext):
     # Получаем введенный логин
     async with state.proxy() as data:
         data['login'] = message.text
-        print(data)
-
         await state.update_data(login=data['login'])
+
     # Проверяем наличие логина в базе данных
     cursor.execute("SELECT * FROM auth WHERE login=?", (data['login'],))
     user = cursor.fetchone()
@@ -93,8 +97,6 @@ async def process_password(message: types.Message, state: FSMContext):
         await insert_id(message.from_user.id, data['login'])
 
         # Отправляем сообщение с клавиатурой и устанавливаем состояние ожидания задачи
-        button_task = KeyboardButton("/task")
-        kb.add(button_task).insert(KeyboardButton("/list"))
         await message.answer(f"Авторизация пройдена успешно!\n\nВыберите действие, которое вас интересует:", reply_markup=kb)
         await state.finish()
     else:
@@ -103,7 +105,7 @@ async def process_password(message: types.Message, state: FSMContext):
 
 
 # Обработчик кнопки "Поставить задачу"
-@dp.message_handler(commands=['task'])
+@dp.message_handler(Text(equals="Оставить поручение"), state='*')
 async def process_task(message: types.Message, state: FSMContext):
     await AuthState.waiting_for_perfomer.set()
     # Пользователь нажал кнопку "Поставить задачу"
@@ -126,12 +128,18 @@ async def process_task_description(message: types.Message, state: FSMContext):
         
     await AuthState.waiting_for_number.set()
 
+
+#Проверка на то что число написано в виде числа
+@dp.message_handler(lambda message: not message.text.isdigit(), state=AuthState.waiting_for_number)
+async def holiday_check(message: types.message):
+    await message.reply('Вы неправильно ввели данные, выберите число еще раз:')
+
+
 # Обработчик ввода исполнителя
 @dp.message_handler(state=AuthState.waiting_for_number, content_types=types.ContentType.TEXT)
 async def process_task_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['perfomer_num'] = message.text
-        print(data)
 
     async with state.proxy() as data:
         #вызов функции вставки задачи в базу данных
@@ -141,16 +149,54 @@ async def process_task_number(message: types.Message, state: FSMContext):
 
     await state.finish()
 
-# Обработчик команды /list
-@dp.message_handler(commands=['list'], state='*')
+# Обработчик команды "Мои поручения"
+@dp.message_handler(Text(equals="Мои поручения"), state='*')
 async def help_command(message: types.message, state: FSMContext):
     async with state.proxy() as data:
         data['login'] = await return_login(message.from_user.id)
         try:
+            keyboard = ReplyKeyboardMarkup(resize_keyboard=True,  one_time_keyboard=True)
+            keyboard.insert(KeyboardButton("Удалить поручение"))
             await message.answer(text="Вот список ваших поручений:")
-            await message.answer(await task_list(data['login']), reply_markup=kb)
+            await message.answer(await task_list(data['login']), reply_markup=keyboard)
         except Exception as e:
             print(f"Ошибка при выполнении /list: {e}")
+
+
+#Обработчик команды /delete
+@dp.message_handler(Text(equals="Удалить поручение"), state='*')
+async def del_command(message: types.message, state: FSMContext):
+    await message.reply(text="Напишите номер поручения из списка, данные которого вы хотите удалить:")
+    await DeleteProfileState.del_num.set()
+      
+#Проверка на то что число написано в виде числа)))
+@dp.message_handler(lambda message: not message.text.isdigit(), state=DeleteProfileState.del_num)
+async def holiday_check(message: types.message):
+    await message.reply('Вы неправильно ввели данные, выберите число еще раз:')
+
+@dp.message_handler(state = DeleteProfileState.del_num)
+async def delete(message: types.message, state = FSMContext):
+    async with state.proxy() as data:
+        data['login'] = await return_login(message.from_user.id)
+        data['del_num'] = message.text
+        await delete_task_by_number(data['login'], data['del_num'])
+
+    await message.reply(text='Запись успешно удалена!)')
+    await message.reply(text='Выберите действие:', reply_markup=kb)
+
+
+# Обработчик команды "Оставленные поручения"
+@dp.message_handler(Text(equals="Оставленные поручения"), state='*')
+async def help_command(message: types.message, state: FSMContext):
+    async with state.proxy() as data:
+        data['login'] = await return_login(message.from_user.id)
+        try:
+            keyboard = ReplyKeyboardMarkup(resize_keyboard=True,  one_time_keyboard=True)
+            await message.answer(text="Вот список оставленных вами поручений:")
+            await message.answer(await task_list_myself(data['login']), reply_markup=kb)
+        except Exception as e:
+            print(f"Ошибка при выполнении /list: {e}")
+
 
 # Запуск бота
 if __name__ == '__main__':
