@@ -160,7 +160,7 @@ async def help_command(message: types.message, state: FSMContext):
             await message.answer(text="Вот список ваших поручений:")
             await message.answer(await task_list(data['login']), reply_markup=keyboard)
         except Exception as e:
-            print(f"Ошибка при выполнении /list: {e}")
+            await message.answer(text="У вас нет поручений!", reply_markup=kb)
 
 
 #Обработчик команды /delete
