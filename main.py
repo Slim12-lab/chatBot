@@ -33,7 +33,7 @@ class DeleteProfileState(StatesGroup):
 
 kb = ReplyKeyboardMarkup(resize_keyboard=True,  
                          one_time_keyboard=True)
-button_task = KeyboardButton("Оставить поручение")
+button_task = KeyboardButton("Создать поручение")
 kb.add(button_task).insert(KeyboardButton("Мои поручения")).insert(KeyboardButton("Оставленные поручения"))
 
 #для запуска
@@ -105,7 +105,7 @@ async def process_password(message: types.Message, state: FSMContext):
 
 
 # Обработчик кнопки "Поставить задачу"
-@dp.message_handler(Text(equals="Оставить поручение"), state='*')
+@dp.message_handler(Text(equals="Создать поручение"), state='*')
 async def process_task(message: types.Message, state: FSMContext):
     await AuthState.waiting_for_perfomer.set()
     # Пользователь нажал кнопку "Поставить задачу"
@@ -169,7 +169,7 @@ async def del_command(message: types.message, state: FSMContext):
     await message.reply(text="Напишите номер поручения из списка, данные которого вы хотите удалить:")
     await DeleteProfileState.del_num.set()
       
-#Проверка на то что число написано в виде числа)))
+#Проверка на то что число написано в виде числа
 @dp.message_handler(lambda message: not message.text.isdigit(), state=DeleteProfileState.del_num)
 async def holiday_check(message: types.message):
     await message.reply('Вы неправильно ввели данные, выберите число еще раз:')
