@@ -156,14 +156,21 @@ async def help_command(message: types.message, state: FSMContext):
         data['login'] = await return_login(message.from_user.id)
         try:
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True,  one_time_keyboard=True)
-            keyboard.insert(KeyboardButton("Удалить поручение"))
+            keyboard.insert(KeyboardButton("Удалить поручение")).insert(KeyboardButton("Выйти в главное меню"))
             await message.answer(text="Вот список ваших поручений:")
             await message.answer(await task_list(data['login']), reply_markup=keyboard)
         except Exception as e:
             await message.answer(text="У вас нет поручений!", reply_markup=kb)
 
 
-#Обработчик команды /delete
+#Обработчик команды "Выйти в главное меню"
+@dp.message_handler(Text(equals="Выйти в главное меню"), state='*')
+async def del_command(message: types.message, state: FSMContext):
+    await message.answer(f"Выберите действие, которое вас интересует:", reply_markup=kb)
+    await state.finish()
+
+
+#Обработчик команды "Удалить поручение"
 @dp.message_handler(Text(equals="Удалить поручение"), state='*')
 async def del_command(message: types.message, state: FSMContext):
     await message.reply(text="Напишите номер поручения из списка, данные которого вы хотите удалить:")
@@ -191,11 +198,10 @@ async def help_command(message: types.message, state: FSMContext):
     async with state.proxy() as data:
         data['login'] = await return_login(message.from_user.id)
         try:
-            keyboard = ReplyKeyboardMarkup(resize_keyboard=True,  one_time_keyboard=True)
             await message.answer(text="Вот список оставленных вами поручений:")
-            await message.answer(await task_list_myself(data['login']), reply_markup=kb)
+            await message.answer(await task_list_myself(data['login']))
         except Exception as e:
-            print(f"Ошибка при выполнении /list: {e}")
+            await message.answer(text="Вы не оставляли поручений!", reply_markup=kb)
 
 
 # Запуск бота
